@@ -8,7 +8,10 @@ __pycache__/
 # C extensions
 *.so
 
-#*.png
+*.obj
+*.npy
+*.pth.tar
+*.png
 *.jpg
 *.out
 output

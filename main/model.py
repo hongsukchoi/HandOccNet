@@ -5,8 +5,10 @@ from nets.backbone import FPN
 from nets.transformer import Transformer
 from nets.regressor import Regressor
 from utils.mano import MANO
+from utils.fitting import ScaleTranslationLoss, FittingMonitor
+from utils.optimizers import optim_factory
+from utils.camera import PerspectiveCamera
 from config import cfg
-import math
 
 class Model(nn.Module):
     def __init__(self, backbone, FIT, SET, regressor):
@@ -15,6 +17,10 @@ class Model(nn.Module):
         self.FIT = FIT
         self.SET = SET
         self.regressor = regressor
+
+        # fitting hand scale and translation 
+        self.fitting_loss = ScaleTranslationLoss(cfg.fitting_joint_idxs)
+
     
     def forward(self, inputs, targets, meta_info, mode):
         p_feats, s_feats = self.backbone(inputs['img']) # primary, secondary feats
@@ -40,9 +46,45 @@ class Model(nn.Module):
         else:
             # test output
             out = {}
+            out['joints_coord_img'] = preds_joints_img[0]
             out['joints_coord_cam'] = pred_mano_results['joints3d']
             out['mesh_coord_cam'] = pred_mano_results['verts3d']
             return out
+
+    def get_mesh_scale_trans(self, pred_joint_img, pred_joint_cam, camera=None):
+        """
+        pred_joint_img: (batch_size, 21, 2)
+        pred_joint_cam: (batch_size, 21, 3)
+        """
+        if camera is None:
+            camera = PerspectiveCamera()
+
+        dtype, device = pred_joint_cam.dtype, pred_joint_cam.device
+        hand_scale = torch.tensor([1.0 / 1.0], dtype=dtype, device=device, requires_grad=False)
+        hand_translation = torch.tensor([0, 0, .6], dtype=dtype, device=device, requires_grad=True)
+        # intended only for demo mesh rendering
+        batch_size = 1
+        self.fitting_loss.trans_estimation = hand_translation.clone()
+
+        params = []
+        params.append(hand_translation)
+        params.append(hand_scale)
+        optimizer, create_graph = optim_factory.create_optimizer(
+            params, optim_type='lbfgs')
+
+        # optimization
+        print("[Fitting]: fitting the hand scale and translation...")
+        with FittingMonitor(batch_size=batch_size) as monitor:
+            fit_camera = monitor.create_fitting_closure(
+                optimizer, camera, pred_joint_cam, pred_joint_img, hand_translation, hand_scale, self.fitting_loss, create_graph=create_graph)
+
+            loss_val = monitor.run_fitting(
+                optimizer, fit_camera, params)
+        
+        print(f"[Fitting]: fitting finished with loss of {loss_val}")
+        print(f"Scale: {hand_scale.detach().cpu().numpy()}, Translation: {hand_translation.detach().cpu().numpy()}")
+        return hand_scale, hand_translation
+
 
 def init_weights(m):
     if type(m) == nn.ConvTranspose2d:

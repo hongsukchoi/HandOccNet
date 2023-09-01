@@ -40,7 +40,8 @@ class Config:
     gpu_ids = '0'
     num_gpus = 1
     continue_train = False
-    
+    fitting_joint_idxs = list(range(0, 21)) #[0, 2, 5, 9, 13, 17]
+
     ## directory
     cur_dir = osp.dirname(os.path.abspath(__file__))
     root_dir = osp.join(cur_dir, '..')
