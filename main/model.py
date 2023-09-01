@@ -47,6 +47,9 @@ class Model(nn.Module):
             # test output
             out = {}
             out['joints_coord_img'] = preds_joints_img[0]
+            out['mano_pose'] = pred_mano_results['mano_pose_aa']
+            out['mano_shape'] = pred_mano_results['mano_shape']
+            
             out['joints_coord_cam'] = pred_mano_results['joints3d']
             out['mesh_coord_cam'] = pred_mano_results['verts3d']
             return out

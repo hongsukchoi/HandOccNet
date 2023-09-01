@@ -10,6 +10,7 @@ import torch
 import torchvision.transforms as transforms
 from torch.nn.parallel.data_parallel import DataParallel
 import torch.backends.cudnn as cudnn
+from tqdm import tqdm
 
 sys.path.insert(0, osp.join('..', 'main'))
 sys.path.insert(0, osp.join('..', 'common'))
@@ -79,19 +80,22 @@ if __name__ == '__main__':
     model.eval()
 
     # set directory and file paths
-    data_dir = '/home/hongsuk.c/Projects/HandNeRF_annotation/data/handnerf_training_1/cam_0/'
+    data_dir = '/home/hongsuk.c/Projects/HandNeRF_annotation/data/handnerf_training_1/cam_0'
     cam_path = '/home/hongsuk.c/Projects/MultiCamCalib/data/handnerf_calibration_0822/output/cam_params/cam_params_final.json'
-
+    
     # this code assumes only right hand images. for left hands, flip the image
-    images = sorted(glob.glob(data_dir + '*.jpg'))
-    annots = sorted(glob.glob(data_dir + '*.json'))
+    images = sorted(glob.glob(data_dir + '/*.jpg'))
+    annots = sorted(glob.glob(data_dir + '/*.json'))
 
     # get camera for projection
     camera = load_camera(cam_path, cam_idx='0')
     camera.cuda()
 
+    save_dir = '/home/hongsuk.c/Projects/HandNeRF_annotation/data/handnerf_training_1/cam_0_handoccnet'
+    if not osp.exists(save_dir):
+        os.mkdir(save_dir)
 
-    for idx, (img_path, ann_path) in enumerate(zip(images, annots)):
+    for idx, (img_path, ann_path) in enumerate(tqdm(zip(images, annots))):
         original_img = load_img(img_path)
         with open(ann_path, 'r') as f:
             ann = json.load(f)
@@ -142,31 +146,45 @@ if __name__ == '__main__':
         np_joint_img = np.concatenate([np_joint_img, np.ones_like(np_joint_img[:, :1])], axis=1)
         vis_img = original_img.astype(np.uint8)[:, :, ::-1]
         pred_joint_img_overlay = vis_keypoints_with_skeleton(vis_img, np_joint_img.T, mano.skeleton)
-        cv2.imshow('2d prediction', pred_joint_img_overlay)
-        # cv2.waitKey(0)
-        cv2.imwrite(f'test{idx}_2d_hand_prediction.png', pred_joint_img_overlay[:, :, ::-1])
+        # cv2.imshow('2d prediction', pred_joint_img_overlay)
+        save_path = osp.join(
+            save_dir, f'{osp.basename(img_path)[:-4]}_2d_prediction.png')
+
+        cv2.imwrite(save_path, pred_joint_img_overlay)
         projected_joints = camera(
             hand_scale * joint_cam + hand_translation)
         np_joint_img = projected_joints[0].detach().cpu().numpy()
         np_joint_img = np.concatenate([np_joint_img, np.ones_like(np_joint_img[:, :1])], axis=1)
         vis_img = original_img.astype(np.uint8)[:, :, ::-1]
         pred_joint_img_overlay = vis_keypoints_with_skeleton(vis_img, np_joint_img.T, mano.skeleton)
-        cv2.imshow('projection', pred_joint_img_overlay)
-        cv2.waitKey(0)
-        cv2.imwrite(f'test{idx}_2d_hand_projection.png', pred_joint_img_overlay[:, :, ::-1])
-
+        # cv2.imshow('projection', pred_joint_img_overlay)
+        # cv2.waitKey(0)
+        save_path = osp.join(save_dir, f'{osp.basename(img_path)[:-4]}_projection.png')
+        cv2.imwrite(save_path, pred_joint_img_overlay)
+        
+        # data to save
+        data_to_save = {
+            'hand_scale': hand_scale.detach().cpu().numpy().tolist(), # 1
+            'hand_translation': hand_translation.detach().cpu().numpy().tolist(), # 3
+            'mano_pose': out['mano_pose'][0].detach().cpu().numpy().tolist(),  # 48
+            'mano_shape': out['mano_shape'][0].detach().cpu().numpy().tolist(),  # 10
+        }
+        save_path = osp.join(
+            save_dir, f'{osp.basename(img_path)[:-4]}_3dmesh.json')
+        with open(save_path, 'w') as f:
+            json.dump(data_to_save, f)
 
         """ Visualization """
         # bbox for input hand image
-        bbox_vis = np.array(bbox, int)
-        bbox_vis[2:] += bbox_vis[:2]
-        cvimg = cv2.rectangle(original_img.copy(),
-                            bbox_vis[:2], bbox_vis[2:], (255, 0, 0), 3)
-        cv2.imwrite(f'test{idx}_hand_bbox.png', cvimg[:, :, ::-1])
+        # bbox_vis = np.array(bbox, int)
+        # bbox_vis[2:] += bbox_vis[:2]
+        # cvimg = cv2.rectangle(original_img.copy(),
+        #                     bbox_vis[:2], bbox_vis[2:], (255, 0, 0), 3)
+        # cv2.imwrite(f'test{idx}_hand_bbox.png', cvimg[:, :, ::-1])
 
-        ## input hand image
-        cv2.imwrite(f'test{idx}_hand_image.png', img[:, :, ::-1])
+        # ## input hand image
+        # cv2.imwrite(f'test{idx}_hand_image.png', img[:, :, ::-1])
 
-        # save mesh (obj)
-        save_obj(verts_out*np.array([1, -1, -1]),
-                 mano.face, f'test{idx}_output.obj')
+        # # save mesh (obj)
+        # save_obj(verts_out*np.array([1, -1, -1]),
+        #          mano.face, f'test{idx}_output.obj')
