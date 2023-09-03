@@ -16,7 +16,7 @@ def rel_change(prev_val, curr_val):
 
 class FittingMonitor(object):
     def __init__(self, summary_steps=1, visualize=False,
-                 maxiters=100, ftol=2e-09, gtol=1e-05,
+                 maxiters=100, ftol=1e-10, gtol=1e-09,
                  body_color=(1.0, 1.0, 0.9, 1.0),
                  model_type='mano',
                  **kwargs):
@@ -65,6 +65,7 @@ class FittingMonitor(object):
         '''
         prev_loss = None
         for n in range(self.maxiters):
+            print(params)
             loss = optimizer.step(closure)
 
             if torch.isnan(loss).sum() > 0:
@@ -79,14 +80,19 @@ class FittingMonitor(object):
                 loss_rel_change = rel_change(prev_loss, loss.item())
 
                 if loss_rel_change <= self.ftol:
+                    print("3333333333333333333", prev_loss)
                     break
 
             if all([torch.abs(var.grad.view(-1).max()).item() < self.gtol
                     for var in params if var.grad is not None]):
+                print("2222222222222", prev_loss)
                 break
-
+            
             prev_loss = loss.item()
-
+            # custom
+            if prev_loss < 300:
+                print("111111111111", prev_loss)
+                break
         return prev_loss
 
     def create_fitting_closure(self,

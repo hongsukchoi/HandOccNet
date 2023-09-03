@@ -96,6 +96,9 @@ if __name__ == '__main__':
         os.mkdir(save_dir)
 
     for idx, (img_path, ann_path) in enumerate(tqdm(zip(images, annots))):
+        if idx != 16:
+            continue
+
         original_img = load_img(img_path)
         with open(ann_path, 'r') as f:
             ann = json.load(f)
@@ -155,6 +158,7 @@ if __name__ == '__main__':
             hand_scale * joint_cam + hand_translation)
         np_joint_img = projected_joints[0].detach().cpu().numpy()
         np_joint_img = np.concatenate([np_joint_img, np.ones_like(np_joint_img[:, :1])], axis=1)
+
         vis_img = original_img.astype(np.uint8)[:, :, ::-1]
         pred_joint_img_overlay = vis_keypoints_with_skeleton(vis_img, np_joint_img.T, mano.skeleton)
         # cv2.imshow('projection', pred_joint_img_overlay)
@@ -185,6 +189,8 @@ if __name__ == '__main__':
         # ## input hand image
         # cv2.imwrite(f'test{idx}_hand_image.png', img[:, :, ::-1])
 
-        # # save mesh (obj)
-        # save_obj(verts_out*np.array([1, -1, -1]),
-        #          mano.face, f'test{idx}_output.obj')
+        # save mesh (obj)
+        save_path = osp.join(
+            save_dir, f'{osp.basename(img_path)[:-4]}_3dmesh.obj')
+        save_obj(verts_out*np.array([1, -1, -1]),
+                 mano.face, save_path)

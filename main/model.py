@@ -67,13 +67,13 @@ class Model(nn.Module):
         hand_translation = torch.tensor([0, 0, .6], dtype=dtype, device=device, requires_grad=True)
         # intended only for demo mesh rendering
         batch_size = 1
-        self.fitting_loss.trans_estimation = hand_translation.clone()
+        # self.fitting_loss.trans_estimation = hand_translation.clone()
 
         params = []
         params.append(hand_translation)
-        params.append(hand_scale)
+        # params.append(hand_scale)
         optimizer, create_graph = optim_factory.create_optimizer(
-            params, optim_type='lbfgs')
+            params, optim_type='lbfgsls', lr=1.0)
 
         # optimization
         print("[Fitting]: fitting the hand scale and translation...")
@@ -83,7 +83,9 @@ class Model(nn.Module):
 
             loss_val = monitor.run_fitting(
                 optimizer, fit_camera, params)
-        
+
+        import pdb; pdb.set_trace()
+
         print(f"[Fitting]: fitting finished with loss of {loss_val}")
         print(f"Scale: {hand_scale.detach().cpu().numpy()}, Translation: {hand_translation.detach().cpu().numpy()}")
         return hand_scale, hand_translation
