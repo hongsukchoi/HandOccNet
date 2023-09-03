@@ -54,7 +54,7 @@ class Model(nn.Module):
             out['mesh_coord_cam'] = pred_mano_results['verts3d']
             return out
 
-    def get_mesh_scale_trans(self, pred_joint_img, pred_joint_cam, camera=None):
+    def get_mesh_scale_trans(self, pred_joint_img, pred_joint_cam, camera=None, depth=None):
         """
         pred_joint_img: (batch_size, 21, 2)
         pred_joint_cam: (batch_size, 21, 3)
@@ -65,15 +65,28 @@ class Model(nn.Module):
         dtype, device = pred_joint_cam.dtype, pred_joint_cam.device
         hand_scale = torch.tensor([1.0 / 1.0], dtype=dtype, device=device, requires_grad=False)
         hand_translation = torch.tensor([0, 0, .6], dtype=dtype, device=device, requires_grad=True)
+        if depth is not None:
+            tensor_depth = torch.tensor(depth, device=device, dtype=dtype)[
+                None, None, :, :]
+            grid = pred_joint_img.clone()
+            grid[:, :, 0] /= tensor_depth.shape[-1]
+            grid[:, :, 1] /= tensor_depth.shape[-2]
+            grid = 2 * grid - 1
+            joints_depth = torch.nn.functional.grid_sample(
+                tensor_depth, grid[:, None, :, :])  # (1, 1, 1, 21)
+            joints_depth = joints_depth.reshape(1, 21, 1)
+            hand_translation = torch.tensor(
+                [0, 0, joints_depth[0, cfg.fitting_joint_idxs, 0].mean() / 1000.], device=device, requires_grad=True)
+
         # intended only for demo mesh rendering
         batch_size = 1
-        # self.fitting_loss.trans_estimation = hand_translation.clone()
+        self.fitting_loss.trans_estimation = hand_translation.clone()
 
         params = []
         params.append(hand_translation)
         # params.append(hand_scale)
         optimizer, create_graph = optim_factory.create_optimizer(
-            params, optim_type='lbfgsls', lr=1.0)
+            params, optim_type='lbfgsls', lr=1.0e-1)
 
         # optimization
         print("[Fitting]: fitting the hand scale and translation...")
@@ -84,7 +97,6 @@ class Model(nn.Module):
             loss_val = monitor.run_fitting(
                 optimizer, fit_camera, params)
 
-        import pdb; pdb.set_trace()
 
         print(f"[Fitting]: fitting finished with loss of {loss_val}")
         print(f"Scale: {hand_scale.detach().cpu().numpy()}, Translation: {hand_translation.detach().cpu().numpy()}")

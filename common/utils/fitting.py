@@ -65,7 +65,6 @@ class FittingMonitor(object):
         '''
         prev_loss = None
         for n in range(self.maxiters):
-            print(params)
             loss = optimizer.step(closure)
 
             if torch.isnan(loss).sum() > 0:
@@ -80,19 +79,14 @@ class FittingMonitor(object):
                 loss_rel_change = rel_change(prev_loss, loss.item())
 
                 if loss_rel_change <= self.ftol:
-                    print("3333333333333333333", prev_loss)
                     break
 
             if all([torch.abs(var.grad.view(-1).max()).item() < self.gtol
                     for var in params if var.grad is not None]):
-                print("2222222222222", prev_loss)
                 break
             
             prev_loss = loss.item()
-            # custom
-            if prev_loss < 300:
-                print("111111111111", prev_loss)
-                break
+        
         return prev_loss
 
     def create_fitting_closure(self,
@@ -173,11 +167,11 @@ class ScaleTranslationLoss(nn.Module):
         joint_error = \
             torch.index_select(joint_img, 1, self.init_joints_idxs) - \
             torch.index_select(projected_joints, 1, self.init_joints_idxs)
-        joint_loss = torch.sum(joint_error.abs()) * self.data_weight 
+        joint_loss = torch.sum(joint_error.abs()) * self.data_weight ** 2
 
         depth_loss = 0.0
         if (self.depth_loss_weight.item() > 0 and self.trans_estimation is not None):
             depth_loss = self.depth_loss_weight * torch.sum((
-                hand_translation[2] - self.trans_estimation[2]).abs())
+                hand_translation[2] - self.trans_estimation[2]).abs() ** 2)
 
         return joint_loss + depth_loss

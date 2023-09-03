@@ -7,6 +7,7 @@ import json
 import numpy as np
 import cv2
 import torch
+from PIL import Image
 import torchvision.transforms as transforms
 from torch.nn.parallel.data_parallel import DataParallel
 import torch.backends.cudnn as cudnn
@@ -80,24 +81,25 @@ if __name__ == '__main__':
     model.eval()
 
     # set directory and file paths
-    data_dir = '/home/hongsuk.c/Projects/HandNeRF_annotation/data/handnerf_training_1/cam_0'
+    subset = 'handnerf_training_2'
+    data_dir = f'/home/hongsuk.c/Projects/HandNeRF_annotation/data/{subset}/cam_0'
     cam_path = '/home/hongsuk.c/Projects/MultiCamCalib/data/handnerf_calibration_0822/output/cam_params/cam_params_final.json'
     
     # this code assumes only right hand images. for left hands, flip the image
     images = sorted(glob.glob(data_dir + '/*.jpg'))
     annots = sorted(glob.glob(data_dir + '/*.json'))
+    depths = sorted(glob.glob(
+        f'/home/hongsuk.c/Projects/HandNeRF_annotation/data/{subset}/cam_0_depth/*.png'))
 
     # get camera for projection
     camera = load_camera(cam_path, cam_idx='0')
     camera.cuda()
 
-    save_dir = '/home/hongsuk.c/Projects/HandNeRF_annotation/data/handnerf_training_1/cam_0_handoccnet'
+    save_dir = f'/home/hongsuk.c/Projects/HandNeRF_annotation/data/{subset}/cam_0_handoccnet'
     if not osp.exists(save_dir):
         os.mkdir(save_dir)
 
-    for idx, (img_path, ann_path) in enumerate(tqdm(zip(images, annots))):
-        if idx != 16:
-            continue
+    for idx, (img_path, ann_path, depth_path) in enumerate(tqdm(zip(images, annots, depths))):
 
         original_img = load_img(img_path)
         with open(ann_path, 'r') as f:
@@ -141,9 +143,12 @@ if __name__ == '__main__':
         torch_bb2img_trans = torch.tensor(bb2img_trans).to(joint_img)
         homo_joint_img = torch.cat([joint_img, torch.ones_like(joint_img[:, :, :1])], dim=2)
         org_res_joint_img = homo_joint_img @ torch_bb2img_trans.transpose(0, 1)
-    
+
+        # depth initialization
+        depth = np.asarray(Image.open(depth_path))
+
         hand_scale, hand_translation = model.module.get_mesh_scale_trans(
-            org_res_joint_img, joint_cam, camera)
+            org_res_joint_img, joint_cam, camera, depth)
 
         np_joint_img = org_res_joint_img[0].cpu().numpy()
         np_joint_img = np.concatenate([np_joint_img, np.ones_like(np_joint_img[:, :1])], axis=1)
