@@ -81,7 +81,7 @@ if __name__ == '__main__':
     model.eval()
 
     # set directory and file paths
-    subset = 'handnerf_training_2'
+    subset = 'handnerf_training_test'
     data_dir = f'/home/hongsuk.c/Projects/HandNeRF_annotation/data/{subset}/cam_0'
     cam_path = '/home/hongsuk.c/Projects/MultiCamCalib/data/handnerf_calibration_0822/output/cam_params/cam_params_final.json'
     
