@@ -13,8 +13,8 @@ from torch.nn.parallel.data_parallel import DataParallel
 import torch.backends.cudnn as cudnn
 from tqdm import tqdm
 
-sys.path.insert(0, osp.join('..', 'main'))
-sys.path.insert(0, osp.join('..', 'common'))
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '..', 'main'))
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '..', 'common'))
 from config import cfg
 from model import get_model
 from utils.preprocessing import load_img, process_bbox, generate_patch_image
