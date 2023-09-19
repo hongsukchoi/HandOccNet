@@ -7,13 +7,18 @@ class Config:
     
     ## dataset
     # HO3D, DEX_YCB
-    trainset = 'HO3D'
+    trainset = 'Custom'
     testset = 'HO3D'
     
     ## input, output
     input_img_shape = (256,256) 
     
     ## training config
+    if trainset == 'Custom':
+        lr_dec_epoch = [10*i for i in range(1,7)]
+        end_epoch = 70
+        lr = 5e-4
+        lr_dec_factor = 0.7
     if trainset == 'HO3D':
         lr_dec_epoch = [10*i for i in range(1,7)]
         end_epoch = 70

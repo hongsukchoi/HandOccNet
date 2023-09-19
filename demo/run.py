@@ -70,7 +70,7 @@ if __name__ == '__main__':
     transform = transforms.ToTensor()
 
     # model snapshot load
-    model_path = './snapshot_demo.pth.tar'
+    model_path = '/home/hongsuk.c/Projects/HandOccNet/main/../output/model_dump/snapshot_70.pth.tar' #'./snapshot_demo.pth.tar'
     assert osp.exists(model_path), 'Cannot find model at ' + model_path
     print('Load checkpoint from {}'.format(model_path))
     model = get_model('test')
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     camera = load_camera(cam_path, cam_idx='0')
     camera.cuda()
 
-    save_dir = f'/home/hongsuk.c/Projects/HandNeRF_annotation/data/{subset}/cam_0_handoccnet'
+    save_dir = f'/home/hongsuk.c/Projects/HandNeRF_annotation/data/{subset}/cam_0_handoccnet_finetuned'
     if not osp.exists(save_dir):
         os.mkdir(save_dir)
 
