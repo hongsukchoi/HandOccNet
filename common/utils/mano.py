@@ -2,12 +2,13 @@ import numpy as np
 import torch
 import os.path as osp
 import json
-from config import cfg
+# from config import cfg
 
-import sys
-sys.path.insert(0, cfg.mano_path)
-import manopth
-from manopth.manolayer import ManoLayer
+# import sys
+# sys.path.insert(0, cfg.mano_path)
+mano_path = osp.abspath(osp.join(osp.dirname(osp.abspath(__file__)), 'manopth'))
+import HandOccNet.common.utils.manopth
+from HandOccNet.common.utils.manopth.manopth.manolayer import ManoLayer
 
 class MANO(object):
     def __init__(self):
@@ -34,4 +35,4 @@ class MANO(object):
         self.joint_regressor = self.joint_regressor[[0, 13, 14, 15, 16, 1, 2, 3, 17, 4, 5, 6, 18, 10, 11, 12, 19, 7, 8, 9, 20],:]
 
     def get_layer(self):
-        return ManoLayer(mano_root=osp.join(cfg.mano_path, 'mano', 'models'), flat_hand_mean=False, use_pca=False, side='right') # load right hand MANO model
+        return ManoLayer(mano_root=osp.join(mano_path, 'mano', 'models'), flat_hand_mean=False, use_pca=False, side='right') # load right hand MANO model

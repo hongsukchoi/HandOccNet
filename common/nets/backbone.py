@@ -5,7 +5,7 @@ import torch.utils.model_zoo as model_zoo
 from torchvision import ops
 import torch
 
-from nets.cbam import SpatialGate
+from HandOccNet.common.nets.cbam import SpatialGate
 
 class FPN(nn.Module):
     def __init__(self, pretrained=True):

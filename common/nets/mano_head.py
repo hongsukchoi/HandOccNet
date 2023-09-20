@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from utils.mano import MANO
+from HandOccNet.common.utils.mano import MANO
 mano = MANO()
 
 def batch_rodrigues(theta):

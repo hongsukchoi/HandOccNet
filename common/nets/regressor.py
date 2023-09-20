@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from utils.mano import MANO
-from nets.hand_head import hand_regHead, hand_Encoder
-from nets.mano_head import mano_regHead
+# from HandOccNet.common.utils.mano import MANO
+from HandOccNet.common.nets.hand_head import hand_regHead, hand_Encoder
+from HandOccNet.common.nets.mano_head import mano_regHead
 
 class Regressor(nn.Module):
     def __init__(self):

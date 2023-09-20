@@ -1,14 +1,13 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from nets.backbone import FPN
-from nets.transformer import Transformer
-from nets.regressor import Regressor
-from utils.mano import MANO
-from utils.fitting import ScaleTranslationLoss, FittingMonitor
-from utils.optimizers import optim_factory
-from utils.camera import PerspectiveCamera
-from config import cfg
+from HandOccNet.common.nets.backbone import FPN
+from HandOccNet.common.nets.transformer import Transformer
+from HandOccNet.common.nets.regressor import Regressor
+from HandOccNet.common.utils.fitting import ScaleTranslationLoss, FittingMonitor
+from HandOccNet.common.utils.optimizers import optim_factory
+from HandOccNet.common.utils.camera import PerspectiveCamera
+# from HandOccNet.main.config import cfg
 
 class Model(nn.Module):
     def __init__(self, backbone, FIT, SET, regressor):
@@ -19,7 +18,8 @@ class Model(nn.Module):
         self.regressor = regressor
 
         # fitting hand scale and translation 
-        self.fitting_loss = ScaleTranslationLoss(cfg.fitting_joint_idxs)
+        self.fitting_joint_idxs = list(range(0, 21))
+        self.fitting_loss = ScaleTranslationLoss(self.fitting_joint_idxs)
 
     
     def forward(self, inputs, targets, meta_info, mode):
@@ -33,7 +33,7 @@ class Model(nn.Module):
             gt_mano_params = None
         pred_mano_results, gt_mano_results, preds_joints_img = self.regressor(feats, gt_mano_params)
        
-        if mode == 'train':
+        if False and mode == 'train':
             # loss functions
             loss = {}
             loss['mano_verts'] = cfg.lambda_mano_verts * F.mse_loss(pred_mano_results['verts3d'], gt_mano_results['verts3d'])
@@ -76,7 +76,7 @@ class Model(nn.Module):
                 tensor_depth, grid[:, None, :, :])  # (1, 1, 1, 21)
             joints_depth = joints_depth.reshape(1, 21, 1)
             hand_translation = torch.tensor(
-                [0, 0, joints_depth[0, cfg.fitting_joint_idxs, 0].mean() / 1000.], device=device, requires_grad=True)
+                [0, 0, joints_depth[0, self.fitting_joint_idxs, 0].mean() / 1000.], device=device, requires_grad=True)
 
         # intended only for demo mesh rendering
         batch_size = 1
