@@ -52,6 +52,10 @@ class Model(nn.Module):
             
             out['joints_coord_cam'] = pred_mano_results['joints3d']
             out['mesh_coord_cam'] = pred_mano_results['verts3d']
+
+            out['mano_joints2cam'] = pred_mano_results['mano_joints2cam'] 
+            out['mano_pose_aa'] = pred_mano_results['mano_pose_aa']
+
             return out
 
     def get_mesh_scale_trans(self, pred_joint_img, pred_joint_cam, camera=None, depth=None):

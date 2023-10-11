@@ -15,10 +15,15 @@ from utils.vis import vis_keypoints, vis_mesh, save_obj, vis_keypoints_with_skel
 from utils.mano import MANO
 mano = MANO()
 
+with open('/home/hongsuk.c/Projects/HandOccNet/main/novel_object_test_list.json', 'r') as f:
+    target_img_list_sum = json.load(f)
+print("[HandOccNet] LENGTH of the target testing images: ", len(target_img_list_sum))    
+
+
 class DEX_YCB(torch.utils.data.Dataset):
     def __init__(self, transform, data_split):
         self.transform = transform
-        self.data_split = data_split if data_split == 'train' else 'test'
+        self.data_split = data_split if data_split == 'train' else 'val' #'test'
         self.root_dir = osp.join('..', 'data', 'DEX_YCB', 'data')
         self.annot_path = osp.join(self.root_dir, 'annotations')
         self.root_joint_idx = 0
@@ -26,7 +31,8 @@ class DEX_YCB(torch.utils.data.Dataset):
         self.datalist = self.load_data()
         if self.data_split != 'train':
             self.eval_result = [[],[]] #[mpjpe_list, pa-mpjpe_list]
-        
+        print("[HandOccNet] Length of the loade testing data: ", len(self.datalist))
+
     def load_data(self):
         db = COCO(osp.join(self.annot_path, "DEX_YCB_s0_{}_data.json".format(self.data_split)))
         
@@ -55,6 +61,9 @@ class DEX_YCB(torch.utils.data.Dataset):
                 data = {"img_path": img_path, "img_shape": img_shape, "joints_coord_cam": joints_coord_cam, "joints_coord_img": joints_coord_img,
                         "bbox": bbox, "cam_param": cam_param, "mano_pose": mano_pose, "mano_shape": mano_shape, "hand_type": hand_type}
             else:
+                if '/'.join(img_path.split('/')[-4:]) not in target_img_list_sum:
+                    continue
+                
                 joints_coord_cam = np.array(ann['joints_coord_cam'], dtype=np.float32)
                 root_joint_cam = copy.deepcopy(joints_coord_cam[0])
                 joints_coord_img = np.array(ann['joints_img'], dtype=np.float32)
@@ -133,7 +142,7 @@ class DEX_YCB(torch.utils.data.Dataset):
             root_joint_cam = data['root_joint_cam']
             inputs = {'img': img}
             targets = {}
-            meta_info = {'root_joint_cam': root_joint_cam}
+            meta_info = {'root_joint_cam': root_joint_cam, 'img_path': img_path}
 
         return inputs, targets, meta_info              
 
