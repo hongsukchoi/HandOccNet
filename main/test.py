@@ -3,6 +3,13 @@ import argparse
 from tqdm import tqdm
 import numpy as np
 import torch.backends.cudnn as cudnn
+
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '..', '..'))
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '..', 'main'))
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '..', 'common'))
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '..', '..', 'tool', 'manopth'))
+
+
 from config import cfg
 from base import Tester
 

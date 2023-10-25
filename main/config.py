@@ -8,7 +8,7 @@ class Config:
     ## dataset
     # HO3D, DEX_YCB
     trainset = 'Custom'
-    testset = 'DEX_YCB'
+    testset = 'HO3D' # #'DEX_YCB'
     
     ## input, output
     input_img_shape = (256,256) 

@@ -17,14 +17,21 @@ mano = MANO()
 
 class HO3D(torch.utils.data.Dataset):
     def __init__(self, transform, data_split):
+
         self.transform = transform
-        self.data_split = data_split if data_split == 'train' else 'evaluation'
-        self.root_dir = osp.join('..', 'data', 'HO3D', 'data')
+        self.mode = data_split
+        self.data_split = 'train' #data_split if data_split == 'train' else 'evaluation'
+        self.root_dir = osp.join(osp.dirname(osp.abspath(__file__)), 'data') #osp.join('..', 'data', 'HO3D', 'data')
         self.annot_path = osp.join(self.root_dir, 'annotations')
         self.root_joint_idx = 0
 
+        target_img_list_path = osp.join(self.annot_path, 'novel_grasp_object12_test_list.json')
+        with open(target_img_list_path, 'r') as f:
+            self.target_img_list = json.load(f)  
+        print("[HandOccNet] LENGTH of HO3D target testing images: ", len(self.target_img_list))   
+
         self.datalist = self.load_data()
-        if self.data_split != 'train':
+        if self.mode != 'train':
             self.eval_result = [[],[]] #[pred_joints_list, pred_verts_list]
         self.joints_name = ('Wrist', 'Index_1', 'Index_2', 'Index_3', 'Middle_1', 'Middle_2', 'Middle_3', 'Pinky_1', 'Pinky_2', 'Pinky_3', 'Ring_1', 'Ring_2', 'Ring_3', 'Thumb_1', 'Thumb_2', 'Thumb_3', 'Thumb_4', 'Index_4', 'Middle_4', 'Ring_4', 'Pinly_4')
     
@@ -37,9 +44,17 @@ class HO3D(torch.utils.data.Dataset):
             image_id = ann['image_id']
             img = db.loadImgs(image_id)[0]
             img_path = osp.join(self.root_dir, self.data_split, img['file_name'])
+            if img_path[-4:] == '.png' and not osp.exists(img_path):
+                img_path = img_path[:-4] + '.jpg'
+
+            if '/'.join(img_path.split('/')[-4:]) not in self.target_img_list:
+                continue
+
             img_shape = (img['height'], img['width'])
             if self.data_split == 'train':
                 joints_coord_cam = np.array(ann['joints_coord_cam'], dtype=np.float32) # meter
+                root_joint_cam = copy.deepcopy(joints_coord_cam[self.root_joint_idx])
+
                 cam_param = {k:np.array(v, dtype=np.float32) for k,v in ann['cam_param'].items()}
                 joints_coord_img = cam2pixel(joints_coord_cam, cam_param['focal'], cam_param['princpt'])
                 bbox = get_bbox(joints_coord_img[:,:2], np.ones_like(joints_coord_img[:,0]), expansion_factor=1.5)
@@ -50,9 +65,10 @@ class HO3D(torch.utils.data.Dataset):
                 mano_pose = np.array(ann['mano_param']['pose'], dtype=np.float32)
                 mano_shape = np.array(ann['mano_param']['shape'], dtype=np.float32)
 
-                data = {"img_path": img_path, "img_shape": img_shape, "joints_coord_cam": joints_coord_cam, "joints_coord_img": joints_coord_img,
+                data = {"img_path": img_path, "img_shape": img_shape, "root_joint_cam": root_joint_cam, "joints_coord_cam": joints_coord_cam, "joints_coord_img": joints_coord_img,
                         "bbox": bbox, "cam_param": cam_param, "mano_pose": mano_pose, "mano_shape": mano_shape}
             else:
+            
                 root_joint_cam = np.array(ann['root_joint_cam'], dtype=np.float32)
                 cam_param = {k:np.array(v, dtype=np.float32) for k,v in ann['cam_param'].items()}
                 bbox = np.array(ann['bbox'], dtype=np.float32)
@@ -74,10 +90,10 @@ class HO3D(torch.utils.data.Dataset):
 
         # img
         img = load_img(img_path)
-        img, img2bb_trans, bb2img_trans, rot, scale = augmentation(img, bbox, self.data_split, do_flip=False)
+        img, img2bb_trans, bb2img_trans, rot, scale = augmentation(img, bbox, self.mode, do_flip=False)
         img = self.transform(img.astype(np.float32))/255.
 
-        if self.data_split == 'train':
+        if self.mode == 'train':
             ## 2D joint coordinate
             joints_img = data['joints_coord_img']
             joints_img_xy1 = np.concatenate((joints_img[:,:2], np.ones_like(joints_img[:,:1])),1)
@@ -114,7 +130,7 @@ class HO3D(torch.utils.data.Dataset):
             root_joint_cam = data['root_joint_cam']
             inputs = {'img': img}
             targets = {}
-            meta_info = {'root_joint_cam': root_joint_cam}
+            meta_info = {'root_joint_cam': root_joint_cam, 'img_path': img_path}
 
         return inputs, targets, meta_info
                   

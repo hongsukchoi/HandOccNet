@@ -22,7 +22,7 @@ def parse_args():
     args = parser.parse_args()
 
     if not args.gpu_ids:
-        assert 0, "Please set propoer gpu ids"
+        assert 0, "Please set propoper gpu ids"
 
     if '-' in args.gpu_ids:
         gpus = args.gpu_ids.split('-')
@@ -59,8 +59,9 @@ def main():
             out['mano_pose_aa'][idx].cpu().numpy(),
         ] for idx, name in enumerate(meta_info['img_path'])}
         total_to_save.update(to_save)
-    import pdb; pdb.set_trace()
-    np.save('DexYCB_HandNeRF_novel_object_testset_HandOccNet_pred.npy', total_to_save)
+
+    # np.save('DexYCB_HandNeRF_novel_object_testset_HandOccNet_pred.npy', total_to_save)
+    np.save('HO3D_HandNeRF_novel_grasp_object12_testset_HandOccNet_pred.npy', total_to_save)
 
 
 if __name__ == "__main__":

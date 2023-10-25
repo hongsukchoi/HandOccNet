@@ -21,14 +21,14 @@ class DEX_YCB(torch.utils.data.Dataset):
     def __init__(self, transform, data_split):
         self.transform = transform
         self.data_split = data_split if data_split == 'train' else 'val' #'test'
-        self.root_dir = osp.join('..', 'data', 'DEX_YCB', 'data')
+        self.root_dir =  osp.join(osp.dirname(osp.abspath(__file__)), 'data')  #osp.join('..', 'data', 'DEX_YCB', 'data')
         self.annot_path = osp.join(self.root_dir, 'annotation')
         self.root_joint_idx = 0
 
         target_img_list_path = osp.join(self.annot_path, 'novel_object_test_list.json')
         with open(target_img_list_path, 'r') as f:
             self.target_img_list = json.load(f)  # obj 3,5,10,15 in val set
-        print("[HandOccNet] LENGTH of the target testing images: ", len(self.target_img_list))    
+        print("[HandOccNet] LENGTH of DEXYCB target testing images: ", len(self.target_img_list))    
 
 
         self.datalist = self.load_data()
@@ -46,6 +46,9 @@ class DEX_YCB(torch.utils.data.Dataset):
             img = db.loadImgs(image_id)[0]
             img_path = osp.join(self.root_dir, img['file_name'])
             img_shape = (img['height'], img['width'])
+            if '/'.join(img_path.split('/')[-4:]) not in self.target_img_list:
+                continue
+            
             if self.data_split == 'train':
                 joints_coord_cam = np.array(ann['joints_coord_cam'], dtype=np.float32) # meter
                 cam_param = {k:np.array(v, dtype=np.float32) for k,v in ann['cam_param'].items()}
@@ -64,8 +67,7 @@ class DEX_YCB(torch.utils.data.Dataset):
                 data = {"img_path": img_path, "img_shape": img_shape, "joints_coord_cam": joints_coord_cam, "joints_coord_img": joints_coord_img,
                         "bbox": bbox, "cam_param": cam_param, "mano_pose": mano_pose, "mano_shape": mano_shape, "hand_type": hand_type}
             else:
-                if '/'.join(img_path.split('/')[-4:]) not in self.target_img_list:
-                    continue
+
                 
                 joints_coord_cam = np.array(ann['joints_coord_cam'], dtype=np.float32)
                 root_joint_cam = copy.deepcopy(joints_coord_cam[0])
