@@ -15,9 +15,6 @@ from utils.vis import vis_keypoints, vis_mesh, save_obj, vis_keypoints_with_skel
 from utils.mano import MANO
 mano = MANO()
 
-with open('/home/hongsuk.c/Projects/HandOccNet/main/novel_object_test_list.json', 'r') as f:
-    target_img_list_sum = json.load(f)
-print("[HandOccNet] LENGTH of the target testing images: ", len(target_img_list_sum))    
 
 
 class DEX_YCB(torch.utils.data.Dataset):
@@ -25,8 +22,14 @@ class DEX_YCB(torch.utils.data.Dataset):
         self.transform = transform
         self.data_split = data_split if data_split == 'train' else 'val' #'test'
         self.root_dir = osp.join('..', 'data', 'DEX_YCB', 'data')
-        self.annot_path = osp.join(self.root_dir, 'annotations')
+        self.annot_path = osp.join(self.root_dir, 'annotation')
         self.root_joint_idx = 0
+
+        target_img_list_path = osp.join(self.annot_path, 'novel_object_test_list.json')
+        with open(target_img_list_path, 'r') as f:
+            self.target_img_list = json.load(f)  # obj 3,5,10,15 in val set
+        print("[HandOccNet] LENGTH of the target testing images: ", len(self.target_img_list))    
+
 
         self.datalist = self.load_data()
         if self.data_split != 'train':
@@ -61,7 +64,7 @@ class DEX_YCB(torch.utils.data.Dataset):
                 data = {"img_path": img_path, "img_shape": img_shape, "joints_coord_cam": joints_coord_cam, "joints_coord_img": joints_coord_img,
                         "bbox": bbox, "cam_param": cam_param, "mano_pose": mano_pose, "mano_shape": mano_shape, "hand_type": hand_type}
             else:
-                if '/'.join(img_path.split('/')[-4:]) not in target_img_list_sum:
+                if '/'.join(img_path.split('/')[-4:]) not in self.target_img_list:
                     continue
                 
                 joints_coord_cam = np.array(ann['joints_coord_cam'], dtype=np.float32)

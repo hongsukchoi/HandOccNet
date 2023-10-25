@@ -33,7 +33,7 @@ class Model(nn.Module):
             gt_mano_params = None
         pred_mano_results, gt_mano_results, preds_joints_img = self.regressor(feats, gt_mano_params)
        
-        if False and mode == 'train':
+        if mode == 'train':
             # loss functions
             loss = {}
             loss['mano_verts'] = cfg.lambda_mano_verts * F.mse_loss(pred_mano_results['verts3d'], gt_mano_results['verts3d'])

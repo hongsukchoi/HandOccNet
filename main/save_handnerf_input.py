@@ -1,19 +1,24 @@
-import torch
+import sys
+import os.path as osp
 import argparse
-from tqdm import tqdm
 import numpy as np
+import torch
 import torch.backends.cudnn as cudnn
+
+from tqdm import tqdm
+
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '..', '..'))
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '..', 'main'))
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '..', 'common'))
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '..', '..', 'tool', 'manopth'))
+
 from config import cfg
 from base import Tester
-
-# # TEMP 
-# from DEX_YCB import target_img_list_sum
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=str, dest='gpu_ids')
-    parser.add_argument('--test_epoch', type=str, dest='test_epoch')
+    parser.add_argument('--test_epoch', type=str, default='25', dest='test_epoch')
     args = parser.parse_args()
 
     if not args.gpu_ids:
@@ -54,11 +59,9 @@ def main():
             out['mano_pose_aa'][idx].cpu().numpy(),
         ] for idx, name in enumerate(meta_info['img_path'])}
         total_to_save.update(to_save)
-
+    import pdb; pdb.set_trace()
     np.save('DexYCB_HandNeRF_novel_object_testset_HandOccNet_pred.npy', total_to_save)
 
-
-    # tester._print_eval_result(args.test_epoch)
 
 if __name__ == "__main__":
     main()
