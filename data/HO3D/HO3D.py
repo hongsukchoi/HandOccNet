@@ -19,8 +19,8 @@ class HO3D(torch.utils.data.Dataset):
     def __init__(self, transform, data_split):
 
         self.transform = transform
-        self.mode = data_split
-        self.data_split = 'train' #data_split if data_split == 'train' else 'evaluation'
+        self.mode = data_split 
+        self.data_split = 'train' # fixed for HandNeRF eval
         self.root_dir = osp.join(osp.dirname(osp.abspath(__file__)), 'data') #osp.join('..', 'data', 'HO3D', 'data')
         self.annot_path = osp.join(self.root_dir, 'annotations')
         self.root_joint_idx = 0
@@ -28,7 +28,7 @@ class HO3D(torch.utils.data.Dataset):
         target_img_list_path = osp.join(self.annot_path, 'novel_grasp_object12_test_list.json')
         with open(target_img_list_path, 'r') as f:
             self.target_img_list = json.load(f)  
-        print("[HandOccNet] LENGTH of HO3D target testing images: ", len(self.target_img_list))   
+        print("[HandOccNet] Length of HO3D target testing images: ", len(self.target_img_list))   
 
         self.datalist = self.load_data()
         if self.mode != 'train':
@@ -36,14 +36,14 @@ class HO3D(torch.utils.data.Dataset):
         self.joints_name = ('Wrist', 'Index_1', 'Index_2', 'Index_3', 'Middle_1', 'Middle_2', 'Middle_3', 'Pinky_1', 'Pinky_2', 'Pinky_3', 'Ring_1', 'Ring_2', 'Ring_3', 'Thumb_1', 'Thumb_2', 'Thumb_3', 'Thumb_4', 'Index_4', 'Middle_4', 'Ring_4', 'Pinly_4')
     
     def load_data(self):
-        db = COCO(osp.join(self.annot_path, "HO3D_{}_data.json".format(self.data_split)))
+        db = COCO(osp.join(self.annot_path, "HO3Dv3_eval_for_handoccnet.json"))
         
         datalist = []
         for aid in db.anns.keys():
             ann = db.anns[aid]
             image_id = ann['image_id']
             img = db.loadImgs(image_id)[0]
-            img_path = osp.join(self.root_dir, self.data_split, img['file_name'])
+            img_path = osp.join(self.root_dir, img['file_name'])
             if img_path[-4:] == '.png' and not osp.exists(img_path):
                 img_path = img_path[:-4] + '.jpg'
 
@@ -51,31 +51,31 @@ class HO3D(torch.utils.data.Dataset):
                 continue
 
             img_shape = (img['height'], img['width'])
-            if self.data_split == 'train':
-                joints_coord_cam = np.array(ann['joints_coord_cam'], dtype=np.float32) # meter
-                root_joint_cam = copy.deepcopy(joints_coord_cam[self.root_joint_idx])
+            # if self.data_split == 'train':
+            joints_coord_cam = np.array(ann['joints_coord_cam'], dtype=np.float32) # meter
+            root_joint_cam = copy.deepcopy(joints_coord_cam[self.root_joint_idx])
 
-                cam_param = {k:np.array(v, dtype=np.float32) for k,v in ann['cam_param'].items()}
-                joints_coord_img = cam2pixel(joints_coord_cam, cam_param['focal'], cam_param['princpt'])
-                bbox = get_bbox(joints_coord_img[:,:2], np.ones_like(joints_coord_img[:,0]), expansion_factor=1.5)
-                bbox = process_bbox(bbox, img['width'], img['height'], expansion_factor=1.0)
-                if bbox is None:
-                    continue
+            cam_param = {k:np.array(v, dtype=np.float32) for k,v in ann['cam_param'].items()}
+            joints_coord_img = cam2pixel(joints_coord_cam, cam_param['focal'], cam_param['princpt'])
+            bbox = get_bbox(joints_coord_img[:,:2], np.ones_like(joints_coord_img[:,0]), expansion_factor=1.5)
+            bbox = process_bbox(bbox, img['width'], img['height'], expansion_factor=1.0)
+            if bbox is None:
+                continue
 
-                mano_pose = np.array(ann['mano_param']['pose'], dtype=np.float32)
-                mano_shape = np.array(ann['mano_param']['shape'], dtype=np.float32)
+            mano_pose = np.array(ann['mano_param']['pose'], dtype=np.float32)
+            mano_shape = np.array(ann['mano_param']['shape'], dtype=np.float32)
 
-                data = {"img_path": img_path, "img_shape": img_shape, "root_joint_cam": root_joint_cam, "joints_coord_cam": joints_coord_cam, "joints_coord_img": joints_coord_img,
-                        "bbox": bbox, "cam_param": cam_param, "mano_pose": mano_pose, "mano_shape": mano_shape}
-            else:
+            data = {"img_path": img_path, "img_shape": img_shape, "root_joint_cam": root_joint_cam, "joints_coord_cam": joints_coord_cam, "joints_coord_img": joints_coord_img,
+                    "bbox": bbox, "cam_param": cam_param, "mano_pose": mano_pose, "mano_shape": mano_shape}
+            # else:
             
-                root_joint_cam = np.array(ann['root_joint_cam'], dtype=np.float32)
-                cam_param = {k:np.array(v, dtype=np.float32) for k,v in ann['cam_param'].items()}
-                bbox = np.array(ann['bbox'], dtype=np.float32)
-                bbox = process_bbox(bbox, img['width'], img['height'], expansion_factor=1.5)
+            #     root_joint_cam = np.array(ann['root_joint_cam'], dtype=np.float32)
+            #     cam_param = {k:np.array(v, dtype=np.float32) for k,v in ann['cam_param'].items()}
+            #     bbox = np.array(ann['bbox'], dtype=np.float32)
+            #     bbox = process_bbox(bbox, img['width'], img['height'], expansion_factor=1.5)
                 
-                data = {"img_path": img_path, "img_shape": img_shape, "root_joint_cam": root_joint_cam,
-                        "bbox": bbox, "cam_param": cam_param}
+            #     data = {"img_path": img_path, "img_shape": img_shape, "root_joint_cam": root_joint_cam,
+            #             "bbox": bbox, "cam_param": cam_param}
 
             datalist.append(data)
 
@@ -143,34 +143,28 @@ class HO3D(torch.utils.data.Dataset):
             
             out = outs[n]
             
-            verts_out = out['mesh_coord_cam']
             joints_out = out['joints_coord_cam']
+            
+            # root centered
+            joints_out -= joints_out[self.root_joint_idx]
             
             # root align
             gt_root_joint_cam = annot['root_joint_cam']
-            verts_out = verts_out - joints_out[self.root_joint_idx] + gt_root_joint_cam
-            joints_out = joints_out - joints_out[self.root_joint_idx] + gt_root_joint_cam
-                
-            # convert to openGL coordinate system.
-            verts_out *= np.array([1, -1, -1])
-            joints_out *= np.array([1, -1, -1])
+            joints_out += gt_root_joint_cam
+            
+            # GT and rigid align
+            joints_gt = annot['joints_coord_cam']
+            joints_out_aligned = rigid_align(joints_out, joints_gt)
 
-            # convert joint ordering from MANO to HO3D.
-            joints_out = transform_joint_to_other_db(joints_out, mano.joints_name, self.joints_name)
+            # m to mm
+            joints_out *= 1000
+            joints_out_aligned *= 1000
+            joints_gt *= 1000
 
-            self.eval_result[0].append(joints_out.tolist())
-            self.eval_result[1].append(verts_out.tolist())
-
+            self.eval_result[0].append(np.sqrt(np.sum((joints_out - joints_gt)**2,1)).mean())
+            self.eval_result[1].append(np.sqrt(np.sum((joints_out_aligned - joints_gt)**2,1)).mean())
+            
     def print_eval_result(self, test_epoch):
-        output_json_file = osp.join(cfg.result_dir, 'pred{}.json'.format(test_epoch)) 
-        output_zip_file = osp.join(cfg.result_dir, 'pred{}.zip'.format(test_epoch))
-        
-        with open(output_json_file, 'w') as f:
-            json.dump(self.eval_result, f)
-        print('Dumped %d joints and %d verts predictions to %s' % (len(self.eval_result[0]), len(self.eval_result[1]), output_json_file))
-
-        cmd = 'zip -j ' + output_zip_file + ' ' + output_json_file
-        print(cmd)
-        os.system(cmd)
-
+        print('MPJPE : %.2f mm' % np.mean(self.eval_result[0]))
+        print('PA MPJPE : %.2f mm' % np.mean(self.eval_result[1]))
            

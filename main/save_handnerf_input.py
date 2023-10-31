@@ -60,8 +60,17 @@ def main():
         ] for idx, name in enumerate(meta_info['img_path'])}
         total_to_save.update(to_save)
 
+        out = {k: v.cpu().numpy() for k,v in out.items()}
+        for k,v in out.items(): batch_size = out[k].shape[0]
+        out = [{k: v[bid] for k,v in out.items()} for bid in range(batch_size)]
+
+        # evaluate
+        tester._evaluate(out, cur_sample_idx)
+        cur_sample_idx += len(out)
+
     # np.save('DexYCB_HandNeRF_novel_object_testset_HandOccNet_pred.npy', total_to_save)
     np.save('HO3D_HandNeRF_novel_grasp_object12_testset_HandOccNet_pred.npy', total_to_save)
+    tester._print_eval_result(args.test_epoch)
 
 
 if __name__ == "__main__":
