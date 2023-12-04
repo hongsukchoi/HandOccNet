@@ -71,7 +71,7 @@ def main():
     if 'DEX_YCB' in cfg.testset:
         np.save(f'DexYCB_HandNeRF_{cfg.test_config}_testset_HandOccNet_pred.npy', total_to_save)
     else:
-        np.save(f'HO3D_HandNeRF_{cfg.test_config}_testset_HandOccNet_pred.npy', total_to_save)
+        np.save(f'HO3Dv3_HandNeRF_{cfg.test_config}_testset_HandOccNet_pred.npy', total_to_save)
         
     tester._print_eval_result(args.test_epoch)
 
