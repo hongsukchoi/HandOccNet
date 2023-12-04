@@ -4,16 +4,9 @@ import os.path as osp
 import json
 # from config import cfg
 
-# import sys
-# sys.path.insert(0, cfg.mano_path)
-# mano_path = osp.abspath(osp.join(osp.dirname(osp.abspath(__file__)), 'manopth'))
-# import HandOccNet.common.utils.manopth
-# from HandOccNet.common.utils.manopth.manopth.manolayer import ManoLayer
-
-
+from HandOccNet.common.utils.manopth.manopth.manolayer import ManoLayer
 mano_path = osp.abspath(osp.join(osp.dirname(osp.abspath(__file__)), '..', '..', '..', 'tool', 'manopth'))
-import manopth
-from manopth.manolayer import ManoLayer
+
 
 class MANO(object):
     def __init__(self):
