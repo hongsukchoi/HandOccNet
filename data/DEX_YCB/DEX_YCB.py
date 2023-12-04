@@ -25,7 +25,13 @@ class DEX_YCB(torch.utils.data.Dataset):
         self.annot_path = osp.join(self.root_dir, 'annotation')
         self.root_joint_idx = 0
 
-        target_img_list_path = osp.join(self.annot_path, 'novel_object_test_list.json')
+        if cfg.test_config == 'novel_object':
+            target_img_list_path = osp.join(self.annot_path, 'novel_object_test_list.json')
+        elif cfg.test_config == 'novel_grasp':
+            target_img_list_path = osp.join(self.annot_path, 'novel_grasp_test_list.json')
+        else:
+            raise NotImplementedError(f"No such test configuration {cfg.test_config}")
+        
         with open(target_img_list_path, 'r') as f:
             self.target_img_list = json.load(f)  # obj 3,5,10,15 in val set
         print("[HandOccNet] LENGTH of DEXYCB target testing images: ", len(self.target_img_list))    

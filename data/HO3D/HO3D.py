@@ -25,7 +25,10 @@ class HO3D(torch.utils.data.Dataset):
         self.annot_path = osp.join(self.root_dir, 'annotations')
         self.root_joint_idx = 0
 
-        target_img_list_path = osp.join(self.annot_path, 'novel_grasp_object12_test_list.json')
+        if cfg.test_config == 'novel_grasp':
+            target_img_list_path = osp.join(self.annot_path, 'novel_grasp_test_list.json')
+        else:
+            raise NotImplementedError(f"No such test configuration {cfg.test_config}")
         with open(target_img_list_path, 'r') as f:
             self.target_img_list = json.load(f)  
         print("[HandOccNet] Length of HO3D target testing images: ", len(self.target_img_list))   

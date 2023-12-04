@@ -68,8 +68,11 @@ def main():
         tester._evaluate(out, cur_sample_idx)
         cur_sample_idx += len(out)
 
-    # np.save('DexYCB_HandNeRF_novel_object_testset_HandOccNet_pred.npy', total_to_save)
-    np.save('HO3D_HandNeRF_novel_grasp_object12_testset_HandOccNet_pred.npy', total_to_save)
+    if 'DEX_YCB' in cfg.testset:
+        np.save(f'DexYCB_HandNeRF_{cfg.test_config}_testset_HandOccNet_pred.npy', total_to_save)
+    else:
+        np.save(f'HO3D_HandNeRF_{cfg.test_config}_testset_HandOccNet_pred.npy', total_to_save)
+        
     tester._print_eval_result(args.test_epoch)
 
 
