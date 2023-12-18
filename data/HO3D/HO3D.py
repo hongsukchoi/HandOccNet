@@ -30,8 +30,8 @@ class HO3D(torch.utils.data.Dataset):
         else:
             raise NotImplementedError(f"No such test configuration {cfg.test_config}")
         with open(target_img_list_path, 'r') as f:
-            self.target_img_list = json.load(f)  
-        print("[HandOccNet] Length of HO3D target testing images: ", len(self.target_img_list))   
+            self.target_img_list_dict = json.load(f)  
+        print("[HandOccNet] Length of HO3D target testing images: ", len(self.target_img_list_dict))   
 
         self.datalist = self.load_data()
         if self.mode != 'train':
@@ -41,6 +41,8 @@ class HO3D(torch.utils.data.Dataset):
     def load_data(self):
         db = COCO(osp.join(self.annot_path, "HO3Dv3_eval_for_handoccnet.json"))
         
+        target_img_path_list = list(self.target_img_list_dict.values())
+
         datalist = []
         for aid in db.anns.keys():
             ann = db.anns[aid]
@@ -50,7 +52,7 @@ class HO3D(torch.utils.data.Dataset):
             if img_path[-4:] == '.png' and not osp.exists(img_path):
                 img_path = img_path[:-4] + '.jpg'
 
-            if '/'.join(img_path.split('/')[-4:]) not in self.target_img_list:
+            if '/'.join(img_path.split('/')[-4:]) not in target_img_path_list:
                 continue
 
             img_shape = (img['height'], img['width'])

@@ -8,8 +8,8 @@ class Config:
     ## dataset
     # HO3D, DEX_YCB
     trainset = 'Custom'
-    testset = 'HO3D' # #'DEX_YCB'
-    test_config = 'novel_object'  # novel_grasp
+    testset = 'HO3D' # HO3D DEX_YCB
+    test_config = 'novel_grasp'  # novel_object novel_grasp
     
     ## input, output
     input_img_shape = (256,256) 

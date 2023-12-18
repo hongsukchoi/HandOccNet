@@ -118,7 +118,8 @@ class Tester(Base):
         self.logger.info("Creating dataset...")
         self.test_dataset = eval(cfg.testset)(transforms.ToTensor(), "test")
         self.batch_generator = DataLoader(dataset=self.test_dataset, batch_size=cfg.num_gpus*cfg.test_batch_size, shuffle=False, num_workers=cfg.num_thread, pin_memory=True)
-       
+        self.logger.info(f'Length of {cfg.testset}: {len(self.test_dataset)}')
+
     def _make_model(self):
         model_path = os.path.join(cfg.model_dir, 'snapshot_%d.pth.tar' % self.test_epoch)
         assert os.path.exists(model_path), 'Cannot find model at ' + model_path
