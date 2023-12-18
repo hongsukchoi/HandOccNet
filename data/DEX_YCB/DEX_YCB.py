@@ -20,7 +20,7 @@ mano = MANO()
 class DEX_YCB(torch.utils.data.Dataset):
     def __init__(self, transform, data_split):
         self.transform = transform
-        self.data_split = data_split if data_split == 'train' else 'val' #'test'
+        self.data_split = data_split if data_split == 'train' else 'test'
         self.root_dir =  osp.join(osp.dirname(osp.abspath(__file__)), 'data')  #osp.join('..', 'data', 'DEX_YCB', 'data')
         self.annot_path = osp.join(self.root_dir, 'annotation')
         self.root_joint_idx = 0
@@ -33,18 +33,19 @@ class DEX_YCB(torch.utils.data.Dataset):
             raise NotImplementedError(f"No such test configuration {cfg.test_config}")
         
         with open(target_img_list_path, 'r') as f:
-            self.target_img_list = json.load(f)  # obj 3,5,10,15 in val set
-        print("[HandOccNet] LENGTH of DEXYCB target testing images: ", len(self.target_img_list))    
+            self.target_img_list_dict = json.load(f)  # obj 3,5,10,15 in val set
+        print("[HandOccNet] LENGTH of DEXYCB target testing images: ", len(self.target_img_list_dict))    
 
 
         self.datalist = self.load_data()
         if self.data_split != 'train':
             self.eval_result = [[],[]] #[mpjpe_list, pa-mpjpe_list]
-        print("[HandOccNet] Length of the loade testing data: ", len(self.datalist))
+        print("[HandOccNet] Length of the loaded testing data: ", len(self.datalist))
 
     def load_data(self):
         db = COCO(osp.join(self.annot_path, "DEX_YCB_s0_{}_data.json".format(self.data_split)))
         
+        target_img_path_list = list(self.target_img_list_dict.values())
         datalist = []
         for aid in db.anns.keys():
             ann = db.anns[aid]
@@ -52,9 +53,9 @@ class DEX_YCB(torch.utils.data.Dataset):
             img = db.loadImgs(image_id)[0]
             img_path = osp.join(self.root_dir, img['file_name'])
             img_shape = (img['height'], img['width'])
-            if '/'.join(img_path.split('/')[-4:]) not in self.target_img_list:
+
+            if '/'.join(img_path.split('/')[-4:]) not in target_img_path_list:
                 continue
-            
             if self.data_split == 'train':
                 joints_coord_cam = np.array(ann['joints_coord_cam'], dtype=np.float32) # meter
                 cam_param = {k:np.array(v, dtype=np.float32) for k,v in ann['cam_param'].items()}
